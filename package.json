@@ -1,0 +1,15 @@
+{
+  "name": "vanflow-site",
+  "version": "0.1.0",
+  "description": "Temporary Site Flow Source",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Theodore L. Ross",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@kubernetes/client-node": "^0.14.0",
+    "rhea": "^3.0.0"
+  }
+}
