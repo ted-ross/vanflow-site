@@ -19,10 +19,10 @@
 
 FROM registry.access.redhat.com/ubi8-minimal
 RUN microdnf -y install nodejs
-WORKDIR /usr/src/app
+WORKDIR /usr/src
 COPY package*.json ./
 RUN npm ci --only=production
-COPY app/index.js ./
-COPY app/src/*.js ./src/
+COPY ./index.js ./
+COPY ./src/*.js ./src/
 CMD ["node","index.js"]
 

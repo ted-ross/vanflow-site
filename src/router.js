@@ -39,7 +39,7 @@ var readyHandlers   = [];
 const sendBeacon = function() {
     return new Promise((resolve, reject) => {
         if (beaconSender.credit > 0) {
-            beaconSender.send({
+            let dlv = beaconSender.send({
                 to      : 'mc/sfe.all',
                 subject : 'BEACON',
                 application_properties : {
@@ -49,6 +49,8 @@ const sendBeacon = function() {
                     direct     : myAddress,
                 },
             });
+        } else {
+            console.log(`Can't send BEACON, credit starvation`);
         }
         resolve();
     });
@@ -66,8 +68,14 @@ exports.Start = function(address) {
         myAddress    = address;
         conn         = amqp.connect();
         receiver     = conn.open_receiver(address);
-        beaconSender = conn.open_sender('mc/sfe.all');
-        recordSender = conn.open_sender(`mc/${address}`);
+        beaconSender = conn.open_sender({
+            target          : 'mc/sfe.all',
+            snd_settle_mode : 1,
+        });
+        recordSender = conn.open_sender({
+            target          : `mc/${address}`,
+            snd_settle_mode : 1,
+        });
     });
 }
 
@@ -80,12 +88,14 @@ exports.Shutdown = function() {
 }
 
 exports.SendRecord = function(record) {
-    if (true || recordSender.credit > 0) {
+    if (recordSender.credit > 0) {
         recordSender.send({
             to      : `mc/${myAddress}`,
             subject : 'RECORD',
             body    : [ record ],
         });
+    } else {
+        console.log(`Can't send record update to mc/${myAddress} - Credit starvation`);
     }
 }
 

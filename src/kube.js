@@ -19,7 +19,9 @@
 
 "use strict";
 
+const { V1ReplicationControllerList } = require('@kubernetes/client-node');
 const k8s = require('@kubernetes/client-node');
+const { Console } = require('console');
 const fs  = require('fs');
 
 var kc;
@@ -45,8 +47,6 @@ exports.Start = function (in_cluster) {
         client       = k8s.KubernetesObjectApi.makeApiClient(kc);
         v1Api        = kc.makeApiClient(k8s.CoreV1Api);
         v1AppApi     = kc.makeApiClient(k8s.AppsV1Api);
-        serviceWatch = new k8s.Watch(kc);
-        depWatch     = new k8s.Watch(kc);
 
         try {
             namespace = fs.readFileSync('/var/run/secrets/kubernetes.io/serviceaccount/namespace', 'utf8')
@@ -91,4 +91,9 @@ exports.GetPods = function() {
 exports.LoadPod = function(name) {
     return v1Api.readNamespacedPod(name, namespace)
     .then(pod => pod.body);
+}
+
+exports.GetSiteId = function() {
+    return v1Api.readNamespacedConfigMap("skupper-site", namespace)
+    .then(result => result.body.metadata.uid)
 }

@@ -34,10 +34,12 @@ console.log(`Standalone : ${STANDALONE}`);
 //
 exports.Main = function() {
     kube.Start(!STANDALONE)
-    .then(() => vanflow.Start())
+    .then(() => kube.GetSiteId())
+    .then(site_id => vanflow.Start(site_id))
     .then(address => router.Start(address))
     .then(() => console.log("[Initialization completed successfully]"))
     .catch(reason => {
+        console.log(reason);
         console.log(`Initialization failed: ${reason.stack}`);
         process.exit(1);
     });

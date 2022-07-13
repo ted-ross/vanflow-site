@@ -45,34 +45,41 @@ var processRecords = {}; // name => object
 var sourceId;
 var pollTimer;
 var nextRecordId   = 1;
-
-const siteId = parseInt(process.env.VFC_SITE_ID || '0', 10);
+var siteId;
 
 const createSiteRecord = function() {
     siteRecord = {
         [ATTR_RECORD_TYPE] : RTYPE_SITE,
-        [ATTR_IDENTITY]    : [siteId, '', 0],
+        [ATTR_IDENTITY]    : siteId,
         [ATTR_NAMESPACE]   : kube.Namespace(),
         [ATTR_NAME]        : process.env.VFC_SITE_NAME || '',
+        [ATTR_LOCATION]    : process.env.VFC_LOCATION  || '',
+        [ATTR_PROVIDER]    : process.env.VFC_PROVIDER  || '',
+        [ATTR_PLATFORM]    : process.env.VFC_PLATFORM  || '',
     };
 }
 
 const controllerAddress = function() {
     sourceId = (Math.random() + 1).toString(36).substring(2,7);
-    return `sfe.${siteId}:${sourceId}:0`;
+    return `sfe.${sourceId}:0`;
 }
 
 const addProcess = function(pod) {
     processRecords[pod.metadata.name] = {
         [ATTR_RECORD_TYPE] : RTYPE_PROCESS,
-        [ATTR_IDENTITY]    : [siteId, sourceId, nextRecordId],
-        [ATTR_PARENT]      : [siteId, '', 0],
+        [ATTR_IDENTITY]    : `${sourceId}:${nextRecordId}`,
+        [ATTR_PARENT]      : siteId,
         [ATTR_NAME]        : pod.metadata.name,
         [ATTR_IMAGE_NAME]  : pod.spec.containers[0].image,
         [ATTR_SOURCE_HOST] : pod.status.podIP,
     };
     nextRecordId += 1;
     router.SendRecord(processRecords[pod.metadata.name])
+}
+
+const updateProcess = function(pod) {
+    processRecords[pod.metadata.name][ATTR_SOURCE_HOST] = pod.status.podIP;
+    router.SendRecord(processRecords[pod.metadata.name]);
 }
 
 const deleteProcess = function(podname) {
@@ -86,6 +93,8 @@ const pollPods = function() {
             let name = pod.metadata.name;
             if (processRecords[name] === undefined) {
                 addProcess(pod);
+            } else {
+                updateProcess(pod);
             }
         });
     })
@@ -106,8 +115,9 @@ const onFlush = function() {
     }
 }
 
-exports.Start = function () {
+exports.Start = function (sid) {
     return new Promise((resolve, reject) => {
+        siteId = sid;
         console.log(`[VanFlow module starting - Site ID: ${siteId}]`);
         createSiteRecord();
         router.OnRouterReady(onReady);
